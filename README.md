@@ -34,7 +34,7 @@ O Document Root do servidor aponta para `public/`. `config/`, `src/`, `views/` e
 ```bash
 # 1. Clonar e entrar no diretório
 git clone https://github.com/AndersonCav/Formulario-de-Cadastro
-cd cadastro-system
+cd Formulario-de-Cadastro
 
 # 2. Instalar dependências
 composer install
@@ -47,7 +47,10 @@ cp .env.example .env
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS formulario CHARACTER SET utf8mb4;"
 mysql -u root -p formulario < Database/schema.sql
 
-# 5. Subir (se estiver com PHP built-in server)
+# 5. Carregar seed fictício (opcional, para dados de teste)
+mysql -u root -p formulario < Database/seed_example.sql
+
+# 6. Subir (se estiver com PHP built-in server)
 php -S localhost:8000 -t public/
 ```
 

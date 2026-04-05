@@ -1,58 +1,39 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['database', 'csrf', 'validator', 'validation_profiles', 'flash', 'logger']);
 require_admin();
-
-require_once __DIR__.'/../config/database.php';
-require_once __DIR__.'/../src/Csrf.php';
-require_once __DIR__.'/../src/Validator.php';
-require_once __DIR__.'/../src/Flash.php';
-require_once __DIR__.'/../src/Logger.php';
 AppLogger::setLogDir(__DIR__.'/../storage/logs');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !Csrf::verify()) {
-    header('Location: create_user.php'); exit;
-}
+app_require_post_csrf('create_user.php', 'Falha de validação CSRF ao criar usuário');
 
 $data = $_POST;
 $valid = new Validator($data);
-$valid->required('nome', 'Nome');
-$valid->maxLength('nome', 'Nome', 100);
-$valid->required('sobrenome', 'Sobrenome');
-$valid->maxLength('sobrenome', 'Sobrenome', 100);
-$valid->username('username');
-$valid->required('password', 'Senha');
+ValidationProfiles::validateUserIdentity($valid);
 
 if ($valid->fails()) {
-    Flash::set('error', $valid->firstError());
-    header('Location: create_user.php'); exit;
+    app_flash_redirect('error', $valid->firstError(), 'create_user.php');
 }
 
-$username = trim($data['username']);
-$password = trim($data['password']);
-if (strlen($password) < 6) {
-    Flash::set('error', 'A senha deve ter no mínimo 6 caracteres.');
-    header('Location: create_user.php'); exit;
+$normalized = InputNormalizer::userPayload($data);
+$username = $normalized['username'];
+$password = $normalized['password'];
+if (($passwordError = ValidationProfiles::validatePassword($password, true)) !== null) {
+    app_flash_redirect('error', $passwordError, 'create_user.php');
 }
 
 $stmt = $pdo->prepare('SELECT id FROM users WHERE username = :username');
 $stmt->execute([':username' => $username]);
 if ($stmt->fetch()) {
-    Flash::set('error', 'Nome de usuário já está em uso.');
-    header('Location: create_user.php'); exit;
+    app_flash_redirect('error', 'Nome de usuário já está em uso.', 'create_user.php');
 }
 
-$is_admin = in_array($data['is_admin'], ['0', '1'], true) ? (int) $data['is_admin'] : 0;
+$is_admin = $normalized['is_admin'];
 
 try {
     $pdo->prepare('INSERT INTO users (username, password, is_admin, nome, sobrenome) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$username, password_hash($password, PASSWORD_DEFAULT), $is_admin, trim($data['nome']), trim($data['sobrenome'])]);
-    Csrf::regenerate();
-    Flash::set('success', 'Usuário criado com sucesso.');
+        ->execute([$username, password_hash($password, PASSWORD_DEFAULT), $is_admin, $normalized['nome'], $normalized['sobrenome']]);
+    app_flash_redirect('success', 'Usuário criado com sucesso.', 'create_user.php', true);
 } catch (PDOException $e) {
     AppLogger::error('Erro ao criar usuário', ['error' => $e->getMessage()]);
-    Flash::set('error', 'Erro ao criar usuário.');
+    app_flash_redirect('error', 'Erro ao criar usuário.', 'create_user.php');
 }
-header('Location: create_user.php');
-exit;

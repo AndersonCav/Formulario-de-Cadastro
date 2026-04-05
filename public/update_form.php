@@ -1,41 +1,34 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['database', 'csrf', 'validator', 'validation_profiles', 'flash', 'logger']);
 require_admin();
-
-require_once __DIR__.'/../config/database.php';
-require_once __DIR__.'/../src/Csrf.php';
-require_once __DIR__.'/../src/Flash.php';
-require_once __DIR__.'/../src/Logger.php';
 AppLogger::setLogDir(__DIR__.'/../storage/logs');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !Csrf::verify()) {
-    header('Location: view_forms.php'); exit;
-}
+app_require_post_csrf('view_forms.php', 'Falha de validação CSRF ao atualizar formulário');
 
 $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-if (!$id) { header('Location: view_forms.php'); exit; }
+if (!$id) {
+    app_redirect('view_forms.php');
+}
 
-$email = trim($_POST['email'] ?? '');
-if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    Flash::set('error', 'E-mail inválido.');
-    header('Location: edit_form.php?id='.$id); exit;
+$normalized = InputNormalizer::formPayload($_POST);
+$email = $normalized['email'];
+$valid = new Validator(['email' => $email]);
+ValidationProfiles::validateFormUpdate($valid);
+if ($valid->fails()) {
+    app_flash_redirect('error', 'E-mail inválido.', 'edit_form.php?id='.$id);
 }
 
 try {
     $pdo->prepare('UPDATE forms SET nome=?,telefone=?,celular=?,email=?,profissao=?,numero_registro=?,conselho=?,evento=?,cidade=?,estado=? WHERE id=?')
         ->execute([
-            trim($_POST['nome'] ?? ''), trim($_POST['telefone'] ?? ''), trim($_POST['celular'] ?? ''),
-            $email, trim($_POST['profissao'] ?? ''), trim($_POST['numero_registro'] ?? ''),
-            trim($_POST['conselho'] ?? ''), trim($_POST['evento'] ?? ''), trim($_POST['cidade'] ?? ''),
-            trim($_POST['estado'] ?? ''), $id
+            $normalized['nome'], $normalized['telefone'], $normalized['celular'],
+            $normalized['email'], $normalized['profissao'], $normalized['numero_registro'],
+            $normalized['conselho'], $normalized['evento'], $normalized['cidade'],
+            $normalized['estado'], $id
         ]);
-    Flash::set('success', 'Cadastro atualizado com sucesso.');
-    Csrf::regenerate();
+    app_flash_redirect('success', 'Cadastro atualizado com sucesso.', 'view_forms.php', true);
 } catch (PDOException $e) {
     AppLogger::error('Erro ao atualizar formulário', ['id' => $id, 'error' => $e->getMessage()]);
-    Flash::set('error', 'Erro ao atualizar cadastro.');
+    app_flash_redirect('error', 'Erro ao atualizar cadastro.', 'view_forms.php');
 }
-header('Location: view_forms.php');
-exit;

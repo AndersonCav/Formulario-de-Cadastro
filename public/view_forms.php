@@ -1,13 +1,10 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['database', 'csrf', 'flash']);
 
 require_login();
 
 $is_admin = is_admin();
-require_once __DIR__.'/../config/database.php';
-require_once __DIR__.'/../src/Flash.php';
 
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = 20;
@@ -33,20 +30,11 @@ $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $forms = $stmt->fetchAll();
 $totalPages = max(1, (int) ceil($total / $perPage));
+
+$pageTitle = 'Cadastros | Cadastro System';
+include __DIR__.'/../views/partials/header.php';
+include __DIR__.'/../views/partials/navbar.php';
 ?>
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastros | Cadastro System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="./css/navbar.css">
-</head>
-<body>
-<?php include __DIR__.'/../views/partials/navbar.php'; ?>
 <div class="container mt-4">
     <h2>Cadastros Realizados</h2>
     <?php Flash::renderIfPresent(); ?>
@@ -78,7 +66,7 @@ $totalPages = max(1, (int) ceil($total / $perPage));
                     <td>
                         <form method="post" action="remove_form.php" class="d-inline" onsubmit="return confirm('Remover este cadastro?')">
                             <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
-                            <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
+                            <?php echo Csrf::field(); ?>
                             <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
                         </form>
                     </td>
@@ -118,6 +106,4 @@ $totalPages = max(1, (int) ceil($total / $perPage));
         }]
     });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php include __DIR__.'/../views/partials/footer.php'; ?>

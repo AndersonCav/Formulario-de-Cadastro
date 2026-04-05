@@ -22,9 +22,6 @@ error_log
 # OS
 Thumbs.db
 
-# Composer
-composer.lock
-
 # Database dumps with real data
 *.bak
 *.old

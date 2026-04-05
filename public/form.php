@@ -1,7 +1,6 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['csrf']);
 
 require_login();
 
@@ -13,25 +12,11 @@ unset($_SESSION['__form_errors'], $_SESSION['__form_old']);
 $errors = !empty($session_errors) ? $session_errors : (isset($_GET['errors']) ? json_decode($_GET['errors'], true) : []);
 $success = isset($_GET['success']) && $_GET['success'] === 'true';
 $old     = !empty($session_old) ? $session_old : (isset($_GET['old']) ? json_decode($_GET['old'], true) : []);
+
+$pageTitle = 'Formulário | Cadastro System';
+include __DIR__.'/../views/partials/header.php';
+include __DIR__.'/../views/partials/navbar.php';
 ?>
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulário | Cadastro System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="./css/navbar.css">
-    <style>
-        .card { border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .card-header { background-color: #51adb4; color: white; border-radius: 15px 15px 0 0; }
-        .btn-primary { background-color: #51adb4; border: none; }
-        .btn-primary:hover { background-color: #418a8e; }
-    </style>
-</head>
-<body>
-<?php include __DIR__.'/../views/partials/navbar.php'; ?>
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-6">
@@ -45,7 +30,7 @@ $old     = !empty($session_old) ? $session_old : (isset($_GET['old']) ? json_dec
                         <div class="alert alert-danger"><ul class="mb-0"><?php foreach ($errors as $err): ?><li><?= htmlspecialchars($err) ?></li><?php endforeach; ?></ul></div>
                     <?php endif; ?>
                     <form method="post" action="process_form.php">
-                        <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
+                        <?php echo Csrf::field(); ?>
                         <div class="mb-3">
                             <label for="nome" class="form-label">Nome</label>
                             <input type="text" class="form-control" id="nome" name="nome" required value="<?= htmlspecialchars($old['nome'] ?? '') ?>">
@@ -106,6 +91,4 @@ $old     = !empty($session_old) ? $session_old : (isset($_GET['old']) ? json_dec
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script>$(function(){$('#telefone').mask('(00) 0000-0000');$('#celular').mask('(00) 00000-0000');});</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php include __DIR__.'/../views/partials/footer.php'; ?>

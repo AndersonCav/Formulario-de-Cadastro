@@ -1,8 +1,6 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
-require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['database', 'flash', 'csrf']);
 
 require_admin();
 
@@ -21,10 +19,10 @@ include __DIR__.'/../views/partials/navbar.php';
 ?>
 <div class="container mt-4">
     <h2>Editar Usuário</h2>
-    <?php require_once __DIR__.'/../src/Flash.php'; Flash::renderIfPresent(); ?>
+    <?php Flash::renderIfPresent(); ?>
     <form action="update_user.php" method="post" class="mt-3">
         <input type="hidden" name="id" value="<?php echo (int)$user['id']; ?>">
-        <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
+        <?php echo Csrf::field(); ?>
         <div class="mb-3">
             <label for="username" class="form-label">Nome de Usuário</label>
             <input type="text" class="form-control" id="username" name="username" value="<?php echo htmlspecialchars($user['username']); ?>" required>

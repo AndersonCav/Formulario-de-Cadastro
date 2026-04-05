@@ -1,5 +1,8 @@
 <?php
-require_once __DIR__.'/../../config/session.php';
+// views/partials/navbar.php
+// Presume que session.php e helpers.php foram incluídos pela página pública
+// que chama esse partial. Aqui não refazemos require_once para evitar
+// redeclaração de funções.
 ?>
 <nav class="navbar navbar-expand-lg navbar-custom">
     <div class="container">
@@ -20,10 +23,10 @@ require_once __DIR__.'/../../config/session.php';
                 <li class="nav-item">
                     <a class="nav-link" href="view_forms.php"><i class="fas fa-eye"></i> Ver Cadastros</a>
                 </li>
+                <?php if (is_admin()): ?>
                 <li class="nav-item">
                     <a class="nav-link" href="export.php"><i class="fas fa-file-export"></i> Exportar</a>
                 </li>
-                <?php if (is_admin()): ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-users"></i> Usuários

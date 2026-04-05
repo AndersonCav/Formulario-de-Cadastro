@@ -1,14 +1,12 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['flash', 'csrf']);
 
 require_admin();
 
 $pageTitle = 'Criar Usuário | Cadastro System';
 include __DIR__.'/../views/partials/header.php';
 include __DIR__.'/../views/partials/navbar.php';
-require_once __DIR__.'/../src/Flash.php';
 ?>
 <div class="container mt-4">
     <div class="row justify-content-center">
@@ -18,7 +16,7 @@ require_once __DIR__.'/../src/Flash.php';
                 <div class="card-body">
                     <?php Flash::renderIfPresent(); ?>
                     <form action="create_user_process.php" method="post">
-                        <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
+                        <?php echo Csrf::field(); ?>
                         <div class="mb-3">
                             <label for="nome" class="form-label">Nome</label>
                             <input type="text" class="form-control" id="nome" name="nome" required>

@@ -1,16 +1,15 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['database', 'csrf', 'logger']);
 
-require_login();
+// Se já autenticado, redireciona para dashboard
+if (!empty($_SESSION['user_id'])) {
+    redirect('dashboard.php');
+}
 
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once __DIR__.'/../config/database.php';
-    require_once __DIR__.'/../src/Csrf.php';
-    require_once __DIR__.'/../src/Logger.php';
     AppLogger::setLogDir(__DIR__.'/../storage/logs');
 
     if (!Csrf::verify()) {
@@ -72,10 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-card">
             <h2 class="text-center mb-3">Login</h2>
             <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
-                <?php
-                require_once __DIR__.'/../src/Csrf.php';
-                echo Csrf::field();
-                ?>
+                <?php echo Csrf::field(); ?>
                 <input type="text" name="username" placeholder="Usuário" required autocomplete="username">
                 <input type="password" name="password" placeholder="Senha" required autocomplete="current-password">
                 <button type="submit" class="login-button">Entrar</button>

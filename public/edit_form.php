@@ -1,9 +1,6 @@
 <?php
-require_once __DIR__.'/../config/env.php';
-require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/helpers.php';
-require_once __DIR__.'/../src/Csrf.php';
-require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/bootstrap.php';
+app_bootstrap(['database', 'csrf']);
 
 require_admin();
 
@@ -36,21 +33,11 @@ $estados = [
     'RS'=>'Rio Grande do Sul','RO'=>'Rondônia','RR'=>'Roraima','SC'=>'Santa Catarina',
     'SE'=>'Sergipe','SP'=>'São Paulo','TO'=>'Tocantins'
 ];
+
+$pageTitle = 'Editar Cadastro | Cadastro System';
+include __DIR__.'/../views/partials/header.php';
+include __DIR__.'/../views/partials/navbar.php';
 ?>
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Cadastro | Cadastro System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="./css/navbar.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
-</head>
-<body>
-<?php include __DIR__.'/../views/partials/navbar.php'; ?>
 <div class="container mt-5">
     <h2>Editar Cadastro</h2>
     <form action="update_form.php" method="post" class="row g-3 mt-2">
@@ -109,12 +96,12 @@ $estados = [
         </div>
     </form>
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script>
     $(document).ready(function(){
         $('#telefone').mask('(00) 0000-0000');
         $('#celular').mask('(00) 00000-0000');
     });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php include __DIR__.'/../views/partials/footer.php'; ?>
