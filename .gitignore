@@ -1,0 +1,30 @@
+# Dependencies
+/vendor/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+storage/logs/*.log
+*.log
+error_log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Composer
+composer.lock
+
+# Database dumps with real data
+*.bak
+*.old

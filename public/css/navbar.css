@@ -1,0 +1,46 @@
+.navbar-custom {
+    background-color: #f8f9fa;
+}
+
+.navbar-custom .nav-link {
+    color: #333;
+}
+
+.navbar-custom .nav-link:hover {
+    color: #51adb4;
+}
+
+.navbar-custom .navbar-brand img {
+    height: 45px;
+    border-radius: 8px;
+}
+
+.navbar-toggler {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.navbar-toggler-icon {
+    color: #333;
+}
+
+.nav-item {
+    border-radius: 15px;
+    margin: 0 3px;
+}
+
+.nav-link {
+    border-radius: 15px;
+    transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+    background-color: #e9ecef;
+}
+
+.dropdown-menu {
+    border-radius: 10px;
+}
+
+.dropdown-item:hover {
+    background-color: #e9ecef;
+}
