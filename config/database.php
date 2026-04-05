@@ -1,7 +1,12 @@
 <?php
 
-$required = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASS'];
-$missing = array_filter($required, fn($key) => !array_key_exists($key, $_ENV) || $_ENV[$key] === '');
+$keyed = [
+    'DB_HOST' => $_ENV['DB_HOST'] ?? null,
+    'DB_PORT' => $_ENV['DB_PORT'] ?? null,
+    'DB_NAME' => $_ENV['DB_NAME'] ?? null,
+    'DB_USER' => $_ENV['DB_USER'] ?? null,
+];
+$missing = array_keys(array_filter($keyed, fn($v) => $v === null || $v === ''));
 
 if ($missing) {
     http_response_code(500);
