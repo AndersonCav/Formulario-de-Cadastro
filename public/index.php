@@ -1,18 +1,17 @@
 <?php
 require_once __DIR__.'/../config/env.php';
 require_once __DIR__.'/../config/session.php';
-require_once __DIR__.'/../src/Csrf.php';
+require_once __DIR__.'/../src/helpers.php';
 
-if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
-    exit;
-}
+require_login();
 
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__.'/../config/database.php';
     require_once __DIR__.'/../src/Csrf.php';
+    require_once __DIR__.'/../src/Logger.php';
+    AppLogger::setLogDir(__DIR__.'/../storage/logs');
 
     if (!Csrf::verify()) {
         $error = 'Sessão expirada. Tente novamente.';
@@ -23,31 +22,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($username === '' || $password === '') {
             $error = 'Usuário e senha são obrigatórios.';
         } else {
-            $stmt = $pdo->prepare('SELECT id, username, password, is_admin, nome, sobrenome FROM users WHERE username = :username');
-            $stmt->execute(['username' => $username]);
-            $user = $stmt->fetch();
-
-            if ($user && password_verify($password, $user['password'])) {
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['is_admin'] = (int) $user['is_admin'];
-                $_SESSION['nome'] = $user['nome'];
-                $_SESSION['sobrenome'] = $user['sobrenome'];
-                Csrf::regenerate();
-                header('Location: dashboard.php');
-                exit;
+            // Proteção contra brute force: limita 5 tentativas por minuto
+            $login_key = 'login_attempts_'.$_SERVER['REMOTE_ADDR'];
+            if (!isset($_SESSION[$login_key])) {
+                $_SESSION[$login_key] = ['count' => 0, 'time' => $_SERVER['REQUEST_TIME']];
             }
+            $attempts = &$_SESSION[$login_key];
+            if ($_SERVER['REQUEST_TIME'] - $attempts['time'] > 60) {
+                $attempts = ['count' => 0, 'time' => $_SERVER['REQUEST_TIME']];
+            }
+            if ($attempts['count'] >= 5) {
+                $error = 'Muitas tentativas. Aguarde um minuto.';
+            } else {
+                $stmt = $pdo->prepare('SELECT id, username, password, is_admin, nome, sobrenome FROM users WHERE username = ?');
+                $stmt->execute([$username]);
+                $user = $stmt->fetch();
 
-            $error = 'Usuário ou senha incorretos.';
-            require_once __DIR__.'/../src/Logger.php';
-            AppLogger::setLogDir(__DIR__.'/../storage/logs');
-            AppLogger::error('Tentativa de login falhou', ['username' => $username, 'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
+                if ($user && password_verify($password, $user['password'])) {
+                    session_regenerate_id(true);
+                    unset($_SESSION[$login_key]);
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['is_admin'] = (int) $user['is_admin'];
+                    $_SESSION['nome'] = $user['nome'];
+                    $_SESSION['sobrenome'] = $user['sobrenome'];
+                    Csrf::regenerate();
+                    header('Location: dashboard.php');
+                    exit;
+                }
+
+                $attempts['count']++;
+                $error = 'Usuário ou senha incorretos.';
+                AppLogger::error('Tentativa de login falhou', ['username' => $username, 'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
+            }
         }
     }
 }
-
-Csrf::generate();
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -62,7 +72,10 @@ Csrf::generate();
         <div class="login-card">
             <h2 class="text-center mb-3">Login</h2>
             <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
-                <?php echo Csrf::field(); ?>
+                <?php
+                require_once __DIR__.'/../src/Csrf.php';
+                echo Csrf::field();
+                ?>
                 <input type="text" name="username" placeholder="Usuário" required autocomplete="username">
                 <input type="password" name="password" placeholder="Senha" required autocomplete="current-password">
                 <button type="submit" class="login-button">Entrar</button>

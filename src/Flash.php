@@ -1,5 +1,4 @@
 <?php
-
 final class Flash
 {
     public static function set(string $type, string $message): void
@@ -15,5 +14,14 @@ final class Flash
             return $flash;
         }
         return null;
+    }
+
+    public static function renderIfPresent(): void
+    {
+        $flash = self::get();
+        if ($flash) {
+            $cls = $flash['type'] === 'success' ? 'success' : 'danger';
+            echo '<div class="alert alert-'.$cls.' mt-2">'.htmlspecialchars($flash['message']).'</div>';
+        }
     }
 }

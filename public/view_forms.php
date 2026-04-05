@@ -1,23 +1,38 @@
 <?php
 require_once __DIR__.'/../config/env.php';
 require_once __DIR__.'/../config/session.php';
+require_once __DIR__.'/../src/helpers.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit;
-}
+require_login();
 
-$is_admin = (int) ($_SESSION['is_admin'] ?? 0) === 1;
+$is_admin = is_admin();
 require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/../src/Flash.php';
 
-// Admin vê todos, user vê apenas os próprios
+$page = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 20;
+$offset = ($page - 1) * $perPage;
+
 if ($is_admin) {
-    $stmt = $pdo->query('SELECT id, nome, telefone, celular, email, representante, profissao, numero_registro, conselho, evento, cidade, estado, data_hora FROM forms ORDER BY data_hora ASC');
+    $countStmt = $pdo->query('SELECT COUNT(*) FROM forms');
+    $total = $countStmt->fetchColumn();
 } else {
-    $stmt = $pdo->prepare('SELECT id, nome, telefone, celular, email, representante, profissao, numero_registro, conselho, evento, cidade, estado, data_hora FROM forms WHERE created_by_user_id = :user_id ORDER BY data_hora ASC');
-    $stmt->execute([':user_id' => (int) $_SESSION['user_id']]);
+    $c = $pdo->prepare('SELECT COUNT(*) FROM forms WHERE created_by_user_id = :uid');
+    $c->execute([':uid' => user_id()]);
+    $total = $c->fetchColumn();
 }
+
+$stmt = $pdo->prepare(
+    $is_admin
+        ? 'SELECT id, nome, telefone, celular, email, profissao, numero_registro, conselho, evento, cidade, estado, data_hora FROM forms ORDER BY data_hora ASC LIMIT :limit OFFSET :offset'
+        : 'SELECT id, nome, telefone, celular, email, profissao, numero_registro, conselho, evento, cidade, estado, data_hora FROM forms WHERE created_by_user_id = :uid ORDER BY data_hora ASC LIMIT :limit OFFSET :offset'
+);
+if (!$is_admin) $stmt->bindValue(':uid', user_id(), PDO::PARAM_INT);
+$stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $forms = $stmt->fetchAll();
+$totalPages = max(1, (int) ceil($total / $perPage));
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -29,35 +44,19 @@ $forms = $stmt->fetchAll();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="./css/navbar.css">
-    <style>
-        table { box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
-        table thead { background-color: #3ea5af; color: #fff; }
-        .dataTables_filter { display: none; }
-    </style>
 </head>
 <body>
 <?php include __DIR__.'/../views/partials/navbar.php'; ?>
 <div class="container mt-4">
     <h2>Cadastros Realizados</h2>
+    <?php Flash::renderIfPresent(); ?>
     <div class="table-responsive mt-3">
         <table id="cadastrosTable" class="table table-striped table-hover">
-            <thead>
+            <thead class="table-dark">
                 <tr>
-                    <th>Nome</th>
-                    <th>Telefone</th>
-                    <th>Celular</th>
-                    <th>E-mail</th>
-                    <th>Profissão</th>
-                    <th>Nº Registro</th>
-                    <th>Conselho</th>
-                    <th>Evento</th>
-                    <th>Cidade</th>
-                    <th>Estado</th>
-                    <th>Data</th>
-                    <?php if ($is_admin): ?>
-                    <th>Editar</th>
-                    <th>Remover</th>
-                    <?php endif; ?>
+                    <th>Nome</th><th>Telefone</th><th>Celular</th><th>E-mail</th><th>Profissão</th>
+                    <th>Nº Registro</th><th>Conselho</th><th>Evento</th><th>Cidade</th><th>Estado</th><th>Data</th>
+                    <?php if ($is_admin): ?><th>Editar</th><th>Remover</th><?php endif; ?>
                 </tr>
             </thead>
             <tbody>
@@ -69,17 +68,17 @@ $forms = $stmt->fetchAll();
                     <td><?= htmlspecialchars($row['email']) ?></td>
                     <td><?= htmlspecialchars($row['profissao']) ?></td>
                     <td><?= htmlspecialchars($row['numero_registro']) ?></td>
-                    <td><?= htmlspecialchars($row['conselho']) ?></td>
-                    <td><?= htmlspecialchars($row['evento']) ?></td>
+                    <td><?= htmlspecialchars($row['conselho'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($row['evento'] ?? '') ?></td>
                     <td><?= htmlspecialchars($row['cidade']) ?></td>
                     <td><?= htmlspecialchars($row['estado']) ?></td>
                     <td><?= date('d/m/Y', strtotime($row['data_hora'])) ?></td>
                     <?php if ($is_admin): ?>
                     <td><a href="edit_form.php?id=<?= (int)$row['id'] ?>" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i></a></td>
                     <td>
-                        <form method="post" action="remove_form.php" class="d-inline" onsubmit="return confirm('Tem certeza que deseja remover este cadastro?')">
+                        <form method="post" action="remove_form.php" class="d-inline" onsubmit="return confirm('Remover este cadastro?')">
                             <input type="hidden" name="id" value="<?= (int)$row['id'] ?>">
-                            <?php require_once __DIR__.'/../config/env.php'; require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
+                            <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
                             <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
                         </form>
                     </td>
@@ -92,34 +91,33 @@ $forms = $stmt->fetchAll();
             </tbody>
         </table>
     </div>
+    <?php if ($totalPages > 1): ?>
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+            <li class="page-item <?= $i === $page ? 'active' : '' ?>"><a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a></li>
+            <?php endfor; ?>
+        </ul>
+    </nav>
+    <?php endif; ?>
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
 <script>
-    $(document).ready(function(){
-        $('#cadastrosTable').DataTable({
-            "paging": true, "lengthChange": false, "pageLength": 10,
-            "searching": true, "ordering": true, "info": true,
-            "autoWidth": false, "responsive": true,
-            "order": [[10, 'asc']],
-            "language": {
-                "paginate": {"first":"Primeiro","last":"Último","next":"Próximo","previous":"Anterior"},
-                "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                "emptyTable": "Nenhum cadastro encontrado",
-                "search": "Pesquisar:",
-                "infoFiltered": "(filtrado de _MAX_ registros totais)"
-            },
-            "columnDefs": [{
-                "targets": 10,
-                "render": function(data, type, row){
-                    if(type === 'sort' || type === 'type') return data.split('/').reverse().join('');
-                    return data;
-                }
-            }]
-        });
+    $('#cadastrosTable').DataTable({
+        "paging":false,"searching":true,"ordering":true,"info":false,
+        "autoWidth":false,"responsive":true,"order":[[10,'asc']],
+        "language":{
+            "paginate":{"first":"Primeiro","last":"Último","next":"Próximo","previous":"Anterior"},
+            "search":"Pesquisar:","infoFiltered":"(filtrado de _MAX_ registros totais)"
+        },
+        "columnDefs":[{
+            "targets":10,
+            "render":function(d,t){if(t==='sort'||t==='type')return d.split('/').reverse().join('');return d;}
+        }]
     });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<?php include __DIR__.'/../views/partials/footer.php'; ?>
+</body>
+</html>

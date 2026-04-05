@@ -1,14 +1,11 @@
 <?php
 require_once __DIR__.'/../config/env.php';
 require_once __DIR__.'/../config/session.php';
-
-// Admin only
-if (!isset($_SESSION['user_id']) || (int) ($_SESSION['is_admin'] ?? 0) !== 1) {
-    header('Location: dashboard.php');
-    exit;
-}
-
+require_once __DIR__.'/../src/helpers.php';
 require_once __DIR__.'/../config/database.php';
+
+require_admin();
+
 $stmt = $pdo->query('SELECT id, username, nome, sobrenome, is_admin FROM users ORDER BY nome ASC, sobrenome ASC');
 $users = $stmt->fetchAll();
 ?>
@@ -23,40 +20,29 @@ $users = $stmt->fetchAll();
     <link rel="stylesheet" href="./css/navbar.css">
 </head>
 <body>
-<?php
-$is_admin = true;
-include __DIR__.'/../views/partials/header.php';
-include __DIR__.'/../views/partials/navbar.php';
-?>
+<?php include __DIR__.'/../views/partials/header.php'; ?>
+<?php include __DIR__.'/../views/partials/navbar.php'; ?>
 <div class="container mt-4">
     <h2>Usuários Cadastrados</h2>
+    <?php require_once __DIR__.'/../src/Flash.php'; Flash::renderIfPresent(); ?>
     <div class="table-responsive mt-3">
         <table class="table table-hover shadow">
             <thead class="table-dark">
-                <tr>
-                    <th>Nome Completo</th>
-                    <th>Nome de Usuário</th>
-                    <th>Tipo</th>
-                    <th>Ações</th>
-                </tr>
+                <tr><th>Nome Completo</th><th>Nome de Usuário</th><th>Tipo</th><th>Ações</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($users as $user): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($user['nome'] . ' ' . $user['sobrenome']); ?></td>
-                    <td><?php echo htmlspecialchars($user['username']); ?></td>
-                    <td><?php echo (int) $user['is_admin'] === 1 ? '<span class="badge bg-primary">Admin</span>' : '<span class="badge bg-secondary">Usuário</span>'; ?></td>
+                    <td><?= htmlspecialchars($user['nome'].' '.$user['sobrenome']) ?></td>
+                    <td><?= htmlspecialchars($user['username']) ?></td>
+                    <td><?= (int)$user['is_admin'] === 1 ? '<span class="badge bg-primary">Admin</span>' : '<span class="badge bg-secondary">Usuário</span>' ?></td>
                     <td>
-                        <a href="edit_user.php?id=<?php echo (int)$user['id']; ?>" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-edit"></i> Editar
-                        </a>
-                        <?php if ((int)$user['id'] !== (int)$_SESSION['user_id']): ?>
-                        <form method="post" action="remove_user.php" class="d-inline" onsubmit="return confirm('Tem certeza que deseja remover este usuário?');">
-                            <input type="hidden" name="id" value="<?php echo (int)$user['id']; ?>">
+                        <a href="edit_user.php?id=<?= (int)$user['id'] ?>" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit"></i> Editar</a>
+                        <?php if ((int)$user['id'] !== user_id()): ?>
+                        <form method="post" action="remove_user.php" class="d-inline" onsubmit="return confirm('Remover este usuário?');">
+                            <input type="hidden" name="id" value="<?= (int)$user['id'] ?>">
                             <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                <i class="fas fa-trash-alt"></i> Remover
-                            </button>
+                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt"></i> Remover</button>
                         </form>
                         <?php endif; ?>
                     </td>

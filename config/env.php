@@ -1,12 +1,16 @@
 <?php
-
+/**
+ * Carrega variáveis de ambiente a partir do arquivo .env.
+ * Formato suportado: CHAVE=valor, CHAVE="valor com espaços", CHAVE='valor'
+ * Linhas com # são comentários.
+ */
 $envFile = dirname(__DIR__) . '/.env';
 
 if (!file_exists($envFile)) {
-    $debug = (getenv('APP_DEBUG') === 'true');
     http_response_code(500);
+    $debug = (getenv('APP_DEBUG') === 'true');
     if ($debug) {
-        die('Arquivo .env não encontrado. Copie .env.example para .env e configure as variáveis.');
+        die('Arquivo .env não encontrado. Copie .env.example para .env e configure.');
     }
     die('Erro de configuração do sistema.');
 }
@@ -17,12 +21,26 @@ foreach ($lines as $line) {
     if ($line === '' || strpos($line, '#') === 0) {
         continue;
     }
-    if (strpos($line, '=') !== false) {
-        [$key, $value] = explode('=', $line, 2);
-        $key = trim($key);
-        $value = trim($value);
-        $value = trim($value, '"\' ');
+    $eqPos = strpos($line, '=');
+    if ($eqPos === false) {
+        continue;
+    }
+    $key = trim(substr($line, 0, $eqPos));
+    $value = trim(substr($line, $eqPos + 1));
+
+    // Remove aspas externas
+    if (strlen($value) >= 2) {
+        $first = $value[0];
+        $last = $value[strlen($value) - 1];
+        if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+            $value = substr($value, 1, -1);
+        }
+    }
+
+    $_ENV[$key] = $value;
+    putenv("{$key}={$value}");
+    if ($key === 'DB_PASS') {
+        // DB_PASS pode ser vazio, mas ainda existe como chave
         $_ENV[$key] = $value;
-        putenv("{$key}={$value}");
     }
 }

@@ -1,13 +1,11 @@
 <?php
 require_once __DIR__.'/../config/env.php';
 require_once __DIR__.'/../config/session.php';
-
-if (!isset($_SESSION['user_id']) || (int) ($_SESSION['is_admin'] ?? 0) !== 1) {
-    header('Location: dashboard.php');
-    exit;
-}
-
+require_once __DIR__.'/../src/helpers.php';
+require_once __DIR__.'/../src/Csrf.php';
 require_once __DIR__.'/../config/database.php';
+
+require_admin();
 
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id) {
@@ -23,6 +21,21 @@ if (!$form) {
     header('Location: view_forms.php');
     exit;
 }
+
+$profissoes = [
+    'Médico','Dentista','Veterinário','Esteticista','Psicólogo',
+    'Farmacêutico','Biomédico','Nutricionista','Fisioterapeuta',
+    'Terapeuta','Enfermeiro','Educador Físico','Farmacêutico Estético'
+];
+$estados = [
+    'AC'=>'Acre','AL'=>'Alagoas','AP'=>'Amapá','AM'=>'Amazonas',
+    'BA'=>'Bahia','CE'=>'Ceará','DF'=>'Distrito Federal','ES'=>'Espírito Santo',
+    'GO'=>'Goiás','MA'=>'Maranhão','MT'=>'Mato Grosso','MS'=>'Mato Grosso do Sul',
+    'MG'=>'Minas Gerais','PA'=>'Pará','PB'=>'Paraíba','PR'=>'Paraná',
+    'PE'=>'Pernambuco','PI'=>'Piauí','RJ'=>'Rio de Janeiro','RN'=>'Rio Grande do Norte',
+    'RS'=>'Rio Grande do Sul','RO'=>'Rondônia','RR'=>'Roraima','SC'=>'Santa Catarina',
+    'SE'=>'Sergipe','SP'=>'São Paulo','TO'=>'Tocantins'
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -42,7 +55,7 @@ if (!$form) {
     <h2>Editar Cadastro</h2>
     <form action="update_form.php" method="post" class="row g-3 mt-2">
         <input type="hidden" name="id" value="<?= (int)$form['id'] ?>">
-        <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
+        <?php echo Csrf::field(); ?>
         <div class="col-md-6">
             <label for="nome" class="form-label">Nome</label>
             <input type="text" name="nome" id="nome" class="form-control" value="<?= htmlspecialchars($form['nome']) ?>" required>
@@ -68,16 +81,22 @@ if (!$form) {
             <input type="text" name="numero_registro" id="numero_registro" class="form-control" value="<?= htmlspecialchars($form['numero_registro']) ?>">
         </div>
         <div class="col-md-6">
+            <label for="conselho" class="form-label">Conselho</label>
+            <input type="text" name="conselho" id="conselho" class="form-control" value="<?= htmlspecialchars($form['conselho'] ?? '') ?>">
+        </div>
+        <div class="col-md-6">
+            <label for="evento" class="form-label">Evento</label>
+            <input type="text" name="evento" id="evento" class="form-control" value="<?= htmlspecialchars($form['evento'] ?? '') ?>">
+        </div>
+        <div class="col-md-6">
             <label for="cidade" class="form-label">Cidade</label>
-            <input type="text" name="cidade" id="cidade" class="form-control" value="<?= htmlspecialchars($form['cidade']) ?>">
+            <input type="text" name="cidade" id="cidade" class="form-control" value="<?= htmlspecialchars($form['cidade']) ?>" required>
         </div>
         <div class="col-md-6">
             <label for="estado" class="form-label">Estado</label>
-            <select name="estado" id="estado" class="form-select">
+            <select name="estado" id="estado" class="form-select" required>
                 <option value="">Selecione</option>
-                <?php
-                $estados = ['AC'=>'Acre','AL'=>'Alagoas','AP'=>'Amapá','AM'=>'Amazonas','BA'=>'Bahia','CE'=>'Ceará','DF'=>'Distrito Federal','ES'=>'Espírito Santo','GO'=>'Goiás','MA'=>'Maranhão','MT'=>'Mato Grosso','MS'=>'Mato Grosso do Sul','MG'=>'Minas Gerais','PA'=>'Pará','PB'=>'Paraíba','PR'=>'Paraná','PE'=>'Pernambuco','PI'=>'Piauí','RJ'=>'Rio de Janeiro','RN'=>'Rio Grande do Norte','RS'=>'Rio Grande do Sul','RO'=>'Rondônia','RR'=>'Roraima','SC'=>'Santa Catarina','SE'=>'Sergipe','SP'=>'São Paulo','TO'=>'Tocantins'];
-                foreach ($estados as $sigla => $nomeEstado):
+                <?php foreach ($estados as $sigla => $nomeEstado):
                     $sel = $form['estado'] === $sigla ? 'selected' : '';
                 ?>
                     <option value="<?= htmlspecialchars($sigla); ?>" <?= $sel; ?>><?= htmlspecialchars($nomeEstado); ?></option>

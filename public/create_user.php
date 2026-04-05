@@ -1,29 +1,22 @@
 <?php
 require_once __DIR__.'/../config/env.php';
 require_once __DIR__.'/../config/session.php';
+require_once __DIR__.'/../src/helpers.php';
 
-// Admin only
-if (!isset($_SESSION['user_id']) || (int) ($_SESSION['is_admin'] ?? 0) !== 1) {
-    header('Location: dashboard.php');
-    exit;
-}
+require_admin();
 
-$error_message = '';
-?>
-<?php
 $pageTitle = 'Criar Usuário | Cadastro System';
-$is_admin = true;
 include __DIR__.'/../views/partials/header.php';
 include __DIR__.'/../views/partials/navbar.php';
+require_once __DIR__.'/../src/Flash.php';
 ?>
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-light text-center">
-                    <h2 class="mb-0">Criar Usuário</h2>
-                </div>
+                <div class="card-header bg-light text-center"><h2 class="mb-0">Criar Usuário</h2></div>
                 <div class="card-body">
+                    <?php Flash::renderIfPresent(); ?>
                     <form action="create_user_process.php" method="post">
                         <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>
                         <div class="mb-3">
@@ -49,9 +42,6 @@ include __DIR__.'/../views/partials/navbar.php';
                                 <option value="1">Sim</option>
                             </select>
                         </div>
-                        <?php if ($error_message): ?>
-                            <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
-                        <?php endif; ?>
                         <button type="submit" class="btn btn-primary">Criar</button>
                         <a href="dashboard.php" class="btn btn-secondary">Cancelar</a>
                     </form>

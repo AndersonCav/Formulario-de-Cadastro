@@ -1,38 +1,27 @@
 <?php
 require_once __DIR__.'/../config/env.php';
 require_once __DIR__.'/../config/session.php';
-
-// Admin only
-if (!isset($_SESSION['user_id']) || (int) ($_SESSION['is_admin'] ?? 0) !== 1) {
-    header('Location: dashboard.php');
-    exit;
-}
-
+require_once __DIR__.'/../src/helpers.php';
 require_once __DIR__.'/../config/database.php';
 
+require_admin();
+
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-if (!$id) {
-    header('Location: view_users.php');
-    exit;
-}
+if (!$id) { header('Location: view_users.php'); exit; }
 
 $stmt = $pdo->prepare('SELECT id, username, nome, sobrenome, is_admin FROM users WHERE id = :id');
 $stmt->execute([':id' => $id]);
 $user = $stmt->fetch();
-
-if (!$user) {
-    header('Location: view_users.php');
-    exit;
-}
+if (!$user) { header('Location: view_users.php'); exit; }
 ?>
 <?php
-$is_admin = true;
 $pageTitle = 'Editar Usuário | Cadastro System';
 include __DIR__.'/../views/partials/header.php';
 include __DIR__.'/../views/partials/navbar.php';
 ?>
 <div class="container mt-4">
     <h2>Editar Usuário</h2>
+    <?php require_once __DIR__.'/../src/Flash.php'; Flash::renderIfPresent(); ?>
     <form action="update_user.php" method="post" class="mt-3">
         <input type="hidden" name="id" value="<?php echo (int)$user['id']; ?>">
         <?php require_once __DIR__.'/../src/Csrf.php'; echo Csrf::field(); ?>

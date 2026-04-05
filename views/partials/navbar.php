@@ -1,12 +1,10 @@
 <?php
-// views/partials/navbar.php
-// Requires: $is_admin (bool)
 require_once __DIR__.'/../../config/session.php';
 ?>
 <nav class="navbar navbar-expand-lg navbar-custom">
     <div class="container">
-        <a class="navbar-brand" href="dashboard.php">
-            <img src="./img/logo.png" alt="Logo">
+        <a class="navbar-brand text-uppercase fw-bold text-primary" href="dashboard.php">
+            Cadastro System
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
             <span class="navbar-toggler-icon"></span>
@@ -25,7 +23,7 @@ require_once __DIR__.'/../../config/session.php';
                 <li class="nav-item">
                     <a class="nav-link" href="export.php"><i class="fas fa-file-export"></i> Exportar</a>
                 </li>
-                <?php if (!empty($is_admin)): ?>
+                <?php if (is_admin()): ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-users"></i> Usuários
